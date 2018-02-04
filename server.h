@@ -28,5 +28,6 @@ void server();
 void* receives(void*);
 void* sends(void*);
 void terms(int);
+void combine(char*, char**);
 
 #endif

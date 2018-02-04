@@ -35,6 +35,7 @@ void client(char* address){
 	pthread_create(&r, NULL, receivec, (void*)&args);
 	pthread_create(&s, NULL, sendc, (void*)&args);
 	pthread_join(s, NULL);
+	pthread_join(r, NULL);
 
 }
 
@@ -44,7 +45,7 @@ void* receivec(void* data){
 	struct sockaddr_in* server = args->server;
 	int* client_d = args->client_d;
 	unsigned int length = sizeof(struct sockaddr_in);
-	char buffer[BUFFER_MAX];
+	char* buffer = malloc(sizeof(char)*BUFFER_MAX);
 
 	struct sigaction action;
 	memset(&action, 0, sizeof(struct sigaction));
@@ -53,15 +54,21 @@ void* receivec(void* data){
 
 	while(!donec){
 
-		if(recvfrom(*client_d, buffer, BUFFER_MAX - 1, 0, (struct sockaddr*)server, &length) > 0){
+		if(recvfrom(*client_d, buffer, BUFFER_MAX, 0, (struct sockaddr*)server, &length) > 0){
 			decrypt(buffer);
-			printf("[%s]:%s", inet_ntoa(server->sin_addr), buffer);
+			if(*buffer != '['){
+                printf("[%s]:%s", inet_ntoa(server->sin_addr), buffer);
+			}else{
+                printf("%s", buffer);
+			}
 			bzero(buffer, BUFFER_MAX);
 		}
 
 	}
-
-	printf("Client terminated.\n");
+	free(buffer);
+	buffer = NULL;
+    shutdown(*client_d, 2);
+	printf("Client terminated (recievec).\n");
 
 	return NULL;
 }
@@ -71,7 +78,7 @@ void* sendc(void* data){
 	struct paramc* args = data;
 	struct sockaddr_in* server = args->server;
 	int* client_d = args->client_d;
-	char buffer[BUFFER_MAX];
+	char* buffer = malloc(sizeof(char)*BUFFER_MAX);
 
 	struct sigaction action;
 	memset(&action, 0, sizeof(struct sigaction));
@@ -81,15 +88,17 @@ void* sendc(void* data){
 	while(!donec){
 
 		bzero(buffer, BUFFER_MAX);
-		fgets(buffer, BUFFER_MAX - 1, stdin);
+		fgets(buffer, BUFFER_MAX, stdin);
 
 		encrypt(buffer);
 
-		sendto(*client_d, buffer, BUFFER_MAX - 1, 0, (struct sockaddr*)server, sizeof(struct sockaddr_in));
+		sendto(*client_d, buffer, BUFFER_MAX, 0, (struct sockaddr*)server, sizeof(struct sockaddr_in));
 
 	}
-
-	printf("Client terminated.\n");
+	free(buffer);
+	buffer = NULL;
+    shutdown(*client_d, 2);
+	printf("Client terminated (sendc).\n");
 
 	return NULL;
 }
@@ -97,6 +106,5 @@ void* sendc(void* data){
 void termc(int signum){
 
 	donec = 1;
-	printf("\nTerminating client...\n");
 
 }

@@ -1,9 +1,10 @@
-#include "server.h"
-#include "client.h"
+#include "const.h"
 
-//#define linkedlist_test
 #ifdef linkedlist_test
-#include "linkedList.h"
+    #include "linkedList.h"
+#else
+    #include "server.h"
+    #include "client.h"
 #endif
 
 int main(int argc, char* argv[]){
